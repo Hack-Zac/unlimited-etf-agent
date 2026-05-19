@@ -22,16 +22,28 @@ class HoldingsDiff:
         return bool(self.added or self.removed or self.changed)
 
 
+_NAME_COL_CANDIDATES = ("Name", "SecurityName", "Security Name", "Description", "Holding")
+
+
 def _load(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path)
+    df.columns = [c.strip() for c in df.columns]
+
+    # Pick the first available "name" column; create an empty one if none exist.
+    # The name is only used for display in the email — diffs match on StockTicker.
+    name_col = next((c for c in _NAME_COL_CANDIDATES if c in df.columns), None)
+    if name_col is None:
+        df["Name"] = ""
+        name_col = "Name"
+
     df["StockTicker"] = df["StockTicker"].astype(str).str.strip()
     df["Weightings"] = pd.to_numeric(df["Weightings"], errors="coerce").fillna(0.0)
+
     # Collapse duplicates just in case (sum weights)
     return df.groupby("StockTicker", as_index=False).agg(
-        Name=("Name", "first"),
+        Name=(name_col, "first"),
         Weightings=("Weightings", "sum"),
     )
-
 
 def diff_snapshots(ticker: str, today_path: Path, previous_path: Path) -> HoldingsDiff:
     today = _load(today_path)
