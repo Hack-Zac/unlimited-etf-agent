@@ -32,6 +32,15 @@ jobs:
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
         run: python -m agent.main
 
+      - name: Debug — list data folder
+        run: |
+          echo "=== git status ==="
+          git status
+          echo "=== find data ==="
+          find data -type f 2>/dev/null || echo "no data/ folder"
+          echo "=== gitignore ==="
+          cat .gitignore 2>/dev/null || echo "no .gitignore"
+
       - name: Commit new snapshots
         run: |
           git config user.name  "etf-diff-bot"
