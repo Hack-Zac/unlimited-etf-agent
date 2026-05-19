@@ -59,20 +59,24 @@ def diff_snapshots(ticker: str, today_path: Path, previous_path: Path) -> Holdin
         as_of_previous=previous_path.stem,
     )
 
-    for _, row in merged.iterrows():
+for _, row in merged.iterrows():
         sym = row["StockTicker"]
         if row["_merge"] == "left_only":
-            diff.added.append({
-                "ticker": sym,
-                "name": row["Name_today"],
-                "weight": float(row["Weightings_today"]),
-            })
+            w = float(row["Weightings_today"])
+            if abs(w) >= WEIGHT_CHANGE_THRESHOLD:
+                diff.added.append({
+                    "ticker": sym,
+                    "name": row["Name_today"],
+                    "weight": w,
+                })
         elif row["_merge"] == "right_only":
-            diff.removed.append({
-                "ticker": sym,
-                "name": row["Name_prev"],
-                "weight": float(row["Weightings_prev"]),
-            })
+            w = float(row["Weightings_prev"])
+            if abs(w) >= WEIGHT_CHANGE_THRESHOLD:
+                diff.removed.append({
+                    "ticker": sym,
+                    "name": row["Name_prev"],
+                    "weight": w,
+                })
         else:
             delta = float(row["Weightings_today"]) - float(row["Weightings_prev"])
             if abs(delta) >= WEIGHT_CHANGE_THRESHOLD:
@@ -83,7 +87,7 @@ def diff_snapshots(ticker: str, today_path: Path, previous_path: Path) -> Holdin
                     "current": float(row["Weightings_today"]),
                     "delta": delta,
                 })
-
+                
     # Sort for readability
     diff.added.sort(key=lambda x: -x["weight"])
     diff.removed.sort(key=lambda x: -x["weight"])
