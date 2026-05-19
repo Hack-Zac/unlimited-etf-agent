@@ -45,6 +45,7 @@ def _load(path: Path) -> pd.DataFrame:
         Weightings=("Weightings", "sum"),
     )
 
+
 def diff_snapshots(ticker: str, today_path: Path, previous_path: Path) -> HoldingsDiff:
     today = _load(today_path)
     prev = _load(previous_path)
@@ -59,7 +60,7 @@ def diff_snapshots(ticker: str, today_path: Path, previous_path: Path) -> Holdin
         as_of_previous=previous_path.stem,
     )
 
-for _, row in merged.iterrows():
+    for _, row in merged.iterrows():
         sym = row["StockTicker"]
         if row["_merge"] == "left_only":
             w = float(row["Weightings_today"])
@@ -87,9 +88,10 @@ for _, row in merged.iterrows():
                     "current": float(row["Weightings_today"]),
                     "delta": delta,
                 })
-                
+
     # Sort for readability
     diff.added.sort(key=lambda x: -x["weight"])
     diff.removed.sort(key=lambda x: -x["weight"])
     diff.changed.sort(key=lambda x: -abs(x["delta"]))
     return diff
+    
