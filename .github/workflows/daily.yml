@@ -50,5 +50,5 @@ jobs:
             echo "No new snapshots."
           else
             git commit -m "snapshots: $(date -u +'%Y-%m-%d')"
-            git pull --rebase && git push
+            git push --force-with-lease
           fi
