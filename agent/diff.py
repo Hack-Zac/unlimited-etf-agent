@@ -7,7 +7,6 @@ import pandas as pd
 # Ignore changes smaller than this absolute weight delta (in percentage points)
 WEIGHT_CHANGE_THRESHOLD = 0.25
 
-
 @dataclass
 class HoldingsDiff:
     ticker: str
@@ -30,14 +29,24 @@ def _load(path: Path) -> pd.DataFrame:
     df.columns = [c.strip() for c in df.columns]
 
     # Pick the first available "name" column; create an empty one if none exist.
-    # The name is only used for display in the email — diffs match on StockTicker.
     name_col = next((c for c in _NAME_COL_CANDIDATES if c in df.columns), None)
     if name_col is None:
         df["Name"] = ""
         name_col = "Name"
 
     df["StockTicker"] = df["StockTicker"].astype(str).str.strip()
-    df["Weightings"] = pd.to_numeric(df["Weightings"], errors="coerce").fillna(0.0)
+
+    # Prefer MarketValue for weight calculation — Unlimited stopped populating
+    # the Weightings column. Fall back to Weightings if MarketValue is absent.
+    if "MarketValue" in df.columns:
+        df["MarketValue"] = pd.to_numeric(df["MarketValue"], errors="coerce").fillna(0.0)
+        total_nav = df["MarketValue"].abs().sum()
+        if total_nav > 0:
+            df["Weightings"] = (df["MarketValue"] / total_nav * 100).round(4)
+        else:
+            df["Weightings"] = 0.0
+    else:
+        df["Weightings"] = pd.to_numeric(df["Weightings"], errors="coerce").fillna(0.0)
 
     # Collapse duplicates just in case (sum weights)
     return df.groupby("StockTicker", as_index=False).agg(
